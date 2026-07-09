@@ -57,11 +57,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Step 4: Build and Push the image
-      # Note: We must convert the username to lowercase using github.repository_owner
+      # Updated Step: Now using the sanitized lowercase env variable!
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}/my-python-app:latest
+          tags: ghcr.io/${{ env.REPO_LOWERCASE }}/my-python-app:latest
