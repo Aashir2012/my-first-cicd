@@ -1,60 +1,61 @@
-name: Python Code Quality Pipeline
+name: Python CI, Docker Build, and Publish
 
 on:
-    push: 
-        branches: [ "main" ]
-    pull_request: 
-        branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+# Grant the pipeline permissions to write packages to your GitHub profile
+permissions:
+  packages: write
+  contents: read
 
 jobs:
-    test-and-lint:
-        runs-on: ubuntu-latest
+  # JOB 1: Run the tests (Unchanged)
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
+      - name: Run tests with pytest
+        run: pytest test_calculator.py
+
+  # JOB 2: Build and Push Docker Image (Upgraded!)
+  build-and-push-docker:
+    runs-on: ubuntu-latest
+    needs: test-and-lint
     
-        steps:
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
 
-            # Step 1: Download Github repository runner
-            - name: checkout repository code
-              uses: actions/checkout@v4
-            
-            # Step 2: Install Python on Github Runner  
-            - name: Set up python
-              uses: actions/setup-python@v5
-              with:
-                python-node: '3.11'
+      # Step 2: Log into the GitHub Container Registry
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-            # Step 3 : Install dependencies
-            - name: Install dependencies
-              run: |
-                python -m pip install --upgrade pip
-                pip install pytest
-              
+      # Step 3: Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-            # Step 4 : run the testfile we created
-            - name: Run tests with pytest
-              run: pytest test_calculator.py
-
-    build-docker:
-       runs-on: ubuntu-latest
-       needs: test-and-lint
-
-       steps:
-        - name: Checkout repository code
-          uses: actions/checkout@v4
-
-        - name: Set up Docker Buildx
-          uses: docker/setup-buildx-action@v3
-
-        - name: Build docker image
-          run: |
-            docker build  -t my-python-app:latest .
-            echo "Docker image Built success"
-
-
-
-            
-
-
-
-
-
-
+      # Step 4: Build and Push the image
+      # Note: We must convert the username to lowercase using github.repository_owner
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}/my-python-app:latest
