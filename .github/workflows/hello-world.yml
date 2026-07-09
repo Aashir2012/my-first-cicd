@@ -1,18 +1,41 @@
-name: My First CI Pipeline
+name: Python Code Quality Pipeline
 
 on:
-    push:
+    push: 
         branches: [ "main" ]
+    pull_request: 
+        branches: [ "main" ]
+
 jobs:
-    say-hello:
+    test-and-lint:
         runs-on: ubuntu-latest
-
+    
         steps:
-            - name: print a gretting
-              run: echo "Hello, World! My first DevOps pipeline works!"
 
-            - name: show me the current time
-              run: date
+            # Step 1: Download Github repository runner
+            - name: checkout repository code
+              uses: actions/checkout@v4
+            
+            # Step 2: Install Python on Github Runner  
+            - name: Set up python
+              uses: actions/setup-python@v5
+              with:
+                python-node: '3.11'
+
+            # Step 3 : Install dependencies
+            - name: Install dependencies
+              run: |
+                python -m pip upgrade pip
+                pip install pytest
+
+            # Step 4 : run the testfile we created
+            - name: Run tests with pytest
+              run: pytest test_calculator.py
+
+            
+
+
+
 
 
 
